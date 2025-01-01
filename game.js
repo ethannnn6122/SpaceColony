@@ -68,24 +68,6 @@ function create() {
         .on('pointerdown', () => build(2));
     buildingNum = this.add.text(10, 10, 'Buildings: ' + constructedBuildings.length, {fontSize: '20px', fill: '#ffffff' });
     
-    // Turn Base timer
-    timer = this.time.addEvent({
-        delay: 60000,
-        callback: () => {
-            nextTurn();
-        },
-        loop: true
-    });
-    dayCount = 1;
-    timerText = this.add.text(10, 50, 'Day: ' + dayCount +': 60', { fontSize: '20px', fill: '#ffffff' });
-    this.time.addEvent({
-        delay: 1000,
-        callback: () => {
-            let remainingTime = Math.ceil(timer.getRemainingSeconds());
-            timerText.setText('Day: ' + dayCount + ' (' + remainingTime + ')');
-        },
-        loop: true
-    });
     let nextTurnButton = this.add.text(370, 560, 'Next Turn', { fontSize: '20px', fill: '#ffffff' })
         .setInteractive()
         .on('pointerdown', () => {
@@ -103,7 +85,7 @@ function create() {
     popupContainer = this.add.container(450, 300);
 
     // Add a background rectangle
-    let popupBackground = this.add.rectangle(0, 0, 500, 200, 0x000000, 0.8).setOrigin(0.5);
+    let popupBackground = this.add.rectangle(0, 0, 800, 200, 0x000000, 0.8).setOrigin(0.5);
     popupContainer.add(popupBackground);
 
     // Add a text element for the message
@@ -129,6 +111,41 @@ function create() {
             this.scene.restart();
         })
     popupContainer.add(restartBtn);
+    // Add start button
+    let startButton = this.add.text(0, 80, 'Start Game', { fontSize: '16px', fill: '#ffffff' })
+        .setOrigin(0.5)
+        .setInteractive()
+        .setAlpha(1)
+        .on('pointerdown', () => {
+            popupContainer.setVisible(false);
+            // Create the TimerEvent
+            timer = this.time.addEvent({
+                delay: 60000,
+                callback: () => {
+                    nextTurn();
+                },
+                loop: true
+            });
+
+            // Initialize dayCount here
+            dayCount = 1;
+
+            // Create timer text
+            timerText = this.add.text(10, 50, 'Day: 1 (60)', { fontSize: '20px', fill: '#ffffff' });
+
+            // Update timerText every second
+            this.time.addEvent({
+                delay: 1000,
+                callback: () => {
+                    let remainingTime = Math.ceil(timer.getRemainingSeconds());
+                    timerText.setText('Day: ' + dayCount + ' (' + remainingTime + ')');
+                },
+                loop: true
+            });
+
+            startButton.setAlpha(0);
+        });
+    popupContainer.add(startButton);
     // Hide the popup initially
     popupContainer.setVisible(false);
     // Add a button to purchase food
@@ -139,9 +156,15 @@ function create() {
                 resources.spaceBucks -= 10;
                 resources.food += 20;
             } else {
-                showPopup("Not enough Space Bucks!", true);
+                showPopup("Not enough Space Bucks!", true, false, '24px');
             }
         });
+
+    // Display intro message
+    showPopup( "Welcome to Space Colony!\n\n" +
+        "Build structures to generate resources and manage your space station.\n\n" +
+        "Keep an eye on your resources and population to ensure the survival of your station.\n\n" +
+        "Good luck!", false, false, '15px');
 }
 
 function update() {
@@ -220,12 +243,12 @@ function consumeResources() {
     if (resources.food <= 0) {
         // if at zero remain at zero and warn player 
         resources.food = 0;
-        showPopup('Food supply critical!', true, false);
+        showPopup('Food supply critical!', true, false, '24px');
         console.warn("Food supply critical!");
     }
     if (resources.energy <= 0) {
         resources.energy = 0;
-        showPopup('Energy is at zero!', true, false);
+        showPopup('Energy is at zero!', true, false, '24px');
         console.warn('Energy is at zero!');
     }
 }
@@ -260,18 +283,18 @@ function build(buildingIndex) {
             resources.energy -= building.cost.energy;
             resources.spaceBucks -= building.cost.spaceBucks;
             constructedBuildings.push(building);
-            showPopup( buildings[buildingIndex].name  + ' Built!', true, false);
+            showPopup( buildings[buildingIndex].name  + ' Built!', true, false, '24px');
             // Update UI
             update();
         } else {
             // Display message indicating insufficient resources
             // insufficientText.setAlpha(1);
-            showPopup('Insufficent Resources!', true);
+            showPopup('Insufficent Resources!', true, false, '24px');
             console.log("not enough");
         }
     } else {
         // Reached build limit
-        showPopup('Build limit reached!', true, false);
+        showPopup('Build limit reached!', true, false, '24px');
         console.warn('Build limit reached!');
     }
 }
@@ -289,8 +312,9 @@ function reset() {
     constructedBuildings = [];
 }
 
-function showPopup(message, visible, restart) {
+function showPopup(message, visible, restart, txtSize) {
     popupText.setText(message);
+    popupText.setStyle({ fontSize: txtSize });
     closeButton.setVisible(visible);
     restartBtn.setVisible(restart);
     popupContainer.setVisible(true);
@@ -306,7 +330,8 @@ function nextTurn() {
     // Check for lose conditions
     if ( resources.oxygen <= 0 || resources.crewMorale <= 0 || population <= 0 ) {
         timer.remove();
-        showPopup('Game Over!', false, true);
+        showPopup('Game Over!', false, true, '32px');
+        
         console.clear();
     }
 }
